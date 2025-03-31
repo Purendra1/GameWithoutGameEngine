@@ -1,0 +1,5 @@
+# depslib dependency file v1.0
+1743435752 source:c:\users\purendra\documents\code\game\main.c
+	<stdio.h>
+	<conio.h>
+
