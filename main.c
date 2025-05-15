@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <conio.h> // _getch() / _kbhit()
+#include <stdlib.h>
 
 struct Paddle {
     int x; //0 or 119
@@ -7,26 +8,22 @@ struct Paddle {
 }p1, p2;
 
 struct AngleIR {
+    int angle;
     int incx;
     int incy;
-}zero, thirty, fourtyfive, sixty, ninety;
+}zero, thirty, fourtyfive, sixty;
 
 struct Ball {
   int x;
   int y;
+  int ccx;
+  int ccy;
+  //left = 0, right = 1
   int chd;
+  //up = 1, down = 0
   int cvd;
-  AngleIR angle;
+  struct AngleIR* angle;
 }b;
-
-/**
-angle  incx  incy
-0       -1    0
-90       0    -1
-30       3    1
-45       1    1
-60       1    3
-*/
 
 void initPaddles() {
     p1.x=1;
@@ -36,21 +33,66 @@ void initPaddles() {
     p2.ys=12;
 }
 
+void initAngles() {
+    zero.incx = -1;
+    zero.incy = 0;
+    zero.angle = 0;
+
+    thirty.incx = 3;
+    thirty.incy = 1;
+    thirty.angle = 30;
+
+    fourtyfive.incx = 1;
+    fourtyfive.incy = 1;
+    fourtyfive.angle = 45;
+
+    sixty.incx = 1;
+    sixty.incy = 3;
+    sixty.angle = 60;
+}
+
+void initBall() {
+    b.x=59;
+    b.y=15;
+    b.ccx=0;
+    b.ccy=0;
+    b.chd=0;
+    b.cvd=1;
+    b.angle=&zero;
+}
+
 void draw();
 int isPaddleHere(struct Paddle*,int,int);
 char getPixelToPrint(int,int);
 void processInput(int c);
 int isBoundary(int,int);
 int isBall(int,int);
+void updateBall();
 
 int main() {
+
     initPaddles();
+    initAngles();
+    initBall();
+    int k=0;
+
     while(1) {
         if (_kbhit()) {
             int c = _getch();
             processInput(c);
         }
         draw();
+        k=(k+1)%14;
+        if(k==0) {
+                int rd = rand()%2;
+                b.ccx=0;b.ccy=0;
+        b.chd=rd;
+        rd=rand()%2;
+
+        b.cvd=rd;
+        b.angle=&fourtyfive;
+        }
+        updateBall();
         printf("\033[%d;%dH",0,0);
     }
     return 0;
@@ -101,6 +143,115 @@ int isBoundary(int x, int y) {
 }
 
 int isBall(int x,int y) {
-    if (x==59&&y==15)return 1;
+    if (x==b.x&&y==b.y)return 1;
     return 0;
 }
+
+void updateBall() {
+    int dir = b.chd*1000 + b.cvd*100 + b.angle->angle;
+    switch(dir){
+        case 0:
+        case 100:
+            b.x--;
+            break;
+        case 45:
+            b.x--;
+            b.y--;
+            break;
+        case 145:
+            b.x--;
+            b.y++;
+            break;
+        case 1000:
+            b.x++;
+            break;
+        case 1045:
+            b.x++;
+            b.y--;
+            break;
+        case 1100:
+            b.x++;
+            break;
+        case 1145:
+            b.x++;
+            b.y++;
+            break;
+        case 30:
+            b.x--;
+            b.ccx++;
+            countCh(&b.ccx,0,&b.y);
+            break;
+        case 60:
+            b.y--;
+            b.ccy++;
+            countCh(&b.ccy,0,&b.x);
+            break;
+        case 130:
+            b.x--;
+            b.ccx++;
+            countCh(&b.ccx,1,&b.y);
+            break;
+        case 160:
+            b.y++;
+            b.ccy++;
+            countCh(&b.ccy,0,&b.x);
+            break;
+        case 1030:
+            b.x++;
+            b.ccx++;
+            countCh(&b.ccx,0,&b.y);
+            break;
+        case 1060:
+            b.y--;
+            b.ccy++;
+            countCh(&b.ccy,1,&b.x);
+            break;
+        case 1130:
+            b.x++;
+            b.ccx++;
+            countCh(&b.ccx,1,&b.y);
+            break;
+        case 1160:
+            b.y--;
+            b.ccy++;
+            countCh(&b.ccy,1,&b.x);
+            break;
+    }
+}
+
+void countCh(int *ccv, int pm, int *u) {
+    if (*ccv==3) {
+        *ccv=0;
+        if(pm==1)*u++;
+        else *u--;
+    }
+}
+/**
+countCh(ccv,2,+/-);
+chd cvd angle   x                   y
+0   0   00      -1                  0
+0   0   30      -1                  countCh(ccx,2,-)
+0   0   45      -1                  -1
+0   0   60      countCh(ccy,2,-)    -1
+0   1   00      -1                  0
+0   1   30      -1                  countCh(ccx,2,+)
+0   1   45      -1                  1
+0   1   60      countCh(ccy,2,-)    1
+1   0   00      1                   0
+1   0   30      1                   countCh(ccx,2,-)
+1   0   45      1                   -1
+1   0   60      countCh(ccy,2,+)    -1
+1   1   00      1                   0
+1   1   30      1                   countCh(ccx,2,+)
+1   1   45      1                   1
+1   1   60      countCh(ccy,2,+)    1
+*/
+
+
+/**
+angle  incx  incy
+0       -1    0
+30       3    1
+45       1    1
+60       1    3
+*/
