@@ -13,6 +13,8 @@ struct AngleIR {
     int incy;
 }zero, thirty, fourtyfive, sixty;
 
+struct AngleIR* angles[] = {&zero,&thirty,&fourtyfive,&sixty};
+
 struct Ball {
   int x;
   int y;
@@ -82,16 +84,6 @@ int main() {
             processInput(c);
         }
         draw();
-        k=(k+1)%14;
-        if(k==0) {
-                int rd = rand()%2;
-                b.ccx=0;b.ccy=0;
-        b.chd=rd;
-        rd=rand()%2;
-
-        b.cvd=rd;
-        b.angle=&fourtyfive;
-        }
         updateBall();
         printf("\033[%d;%dH",0,0);
     }
@@ -179,76 +171,133 @@ void updateBall() {
         case 30:
             b.x--;
             b.ccx++;
+            b.ccx=b.ccx%3;
             countCh(&b.ccx,0,&b.y);
             break;
         case 60:
             b.y--;
             b.ccy++;
+            b.ccy=b.ccy%3;
             countCh(&b.ccy,0,&b.x);
             break;
         case 130:
             b.x--;
             b.ccx++;
+            b.ccx=b.ccx%3;
             countCh(&b.ccx,1,&b.y);
             break;
         case 160:
             b.y++;
             b.ccy++;
+            b.ccy=b.ccy%3;
             countCh(&b.ccy,0,&b.x);
             break;
         case 1030:
             b.x++;
             b.ccx++;
+            b.ccx=b.ccx%3;
             countCh(&b.ccx,0,&b.y);
             break;
         case 1060:
             b.y--;
             b.ccy++;
+            b.ccy=b.ccy%3;
             countCh(&b.ccy,1,&b.x);
             break;
         case 1130:
             b.x++;
             b.ccx++;
+            b.ccx=b.ccx%3;
             countCh(&b.ccx,1,&b.y);
             break;
         case 1160:
-            b.y--;
+            b.y++;
             b.ccy++;
+            b.ccy=b.ccy%3;
             countCh(&b.ccy,1,&b.x);
             break;
+    }
+
+    if(isBoundary(b.x, b.y) || isPaddleHere(&p1, b.x, b.y) || isPaddleHere(&p2, b.x, b.y)) {
+        b.ccx=0;
+        b.ccy=0;
+
+        //takes random angle, if we are at a boundary angle doesn't change until its 0 else it changes into a random angle
+        int ridx = (rand()%4);
+        if(isBoundary(b.x,b.y)) {
+            if(ridx==0)ridx++;
+            if(b.angle->angle==0)b.angle=angles[ridx];
+        } else {
+            b.angle=angles[ridx];
+        }
+
+        //necessarily changes the vertical direction of the ball
+        if(!b.cvd) {
+            b.cvd=1;
+            if(isBoundary(b.x,b.y)&&(b.y==0||b.y==29))b.y++;
+        } else if (b.cvd) {
+            b.cvd=0;
+            if(isBoundary(b.x,b.y)&&(b.y==0||b.y==29))b.y--;
+        }
+
+        //Changes horizontal direction of the ball, only on boundaries of the vertical edges
+        if(isBoundary(b.x,b.y)&&(b.x==0||b.x==119)) {
+            if(!b.chd) {
+                b.x++;
+                b.chd=1;
+            }
+            else if (b.chd) {
+                b.x--;
+                b.chd=0;
+            }
+        }
+
+        //change horizontal direction if its a paddle
+        if(isPaddleHere(&p1,b.x,b.y) || isPaddleHere(&p2,b.x,b.y)){
+            if(!b.chd) {
+                b.chd=1;
+                b.x++;
+            } else if (b.chd) {
+                b.chd=0;
+                b.x--;
+            }
+        }
+
+        updateBall();
     }
 }
 
 void countCh(int *ccv, int pm, int *u) {
-    if (*ccv==3) {
-        *ccv=0;
-        if(pm==1)*u++;
-        else *u--;
+    if ((*ccv)==2) {
+        (*ccv)=0;
+        if(pm==1)(*u)=(*u)+1;
+        else (*u)=(*u)-1;
     }
 }
 /**
 countCh(ccv,2,+/-);
-chd cvd angle   x                   y
-0   0   00      -1                  0
-0   0   30      -1                  countCh(ccx,2,-)
-0   0   45      -1                  -1
-0   0   60      countCh(ccy,2,-)    -1
-0   1   00      -1                  0
-0   1   30      -1                  countCh(ccx,2,+)
-0   1   45      -1                  1
-0   1   60      countCh(ccy,2,-)    1
-1   0   00      1                   0
-1   0   30      1                   countCh(ccx,2,-)
-1   0   45      1                   -1
-1   0   60      countCh(ccy,2,+)    -1
-1   1   00      1                   0
-1   1   30      1                   countCh(ccx,2,+)
-1   1   45      1                   1
-1   1   60      countCh(ccy,2,+)    1
-*/
+hdc(chd,cc); //1/0 change if * else no
+chd cvd angle   x                   y                   nextChd     nextCvd     nextAngle
+0   0   00      -1                  0                   hdc(chd,cc) 1           rand()
+0   0   30      -1                  countCh(ccx,2,-)    hdc(chd,cc) 1           rand()
+0   0   45      -1                  -1                  hdc(chd,cc) 1           rand()
+0   0   60      countCh(ccy,2,-)    -1                  hdc(chd,cc) 1           rand()
+0   1   00      -1                  0                   hdc(chd,cc) 0           rand()
+0   1   30      -1                  countCh(ccx,2,+)    hdc(chd,cc) 0           rand()
+0   1   45      -1                  1                   hdc(chd,cc) 0           rand()
+0   1   60      countCh(ccy,2,-)    1                   hdc(chd,cc) 0           rand()
+1   0   00      1                   0                   hdc(chd,cc) 1           rand()
+1   0   30      1                   countCh(ccx,2,-)    hdc(chd,cc) 1           rand()
+1   0   45      1                   -1                  hdc(chd,cc) 1           rand()
+1   0   60      countCh(ccy,2,+)    -1                  hdc(chd,cc) 1           rand()
+1   1   00      1                   0                   hdc(chd,cc) 0           rand()
+1   1   30      1                   countCh(ccx,2,+)    hdc(chd,cc) 0           rand()
+1   1   45      1                   1                   hdc(chd,cc) 0           rand()
+1   1   60      countCh(ccy,2,+)    1                   hdc(chd,cc) 0           rand()
 
 
-/**
+
+
 angle  incx  incy
 0       -1    0
 30       3    1
