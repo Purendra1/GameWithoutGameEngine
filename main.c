@@ -83,10 +83,15 @@ int main() {
             int c = _getch();
             processInput(c);
         }
-        draw();
+        draw(0);
         updateBall();
+        if(b.x==0||b.x==119)break;
         printf("\033[%d;%dH",0,0);
     }
+    //Display who won
+    draw(1);
+    int p = (b.x==0) ? 2 : 1;
+    printf("PLAYER %d WON\n",p);
     return 0;
 }
 
@@ -104,10 +109,11 @@ void processInput(int c) {
 }
 
 
-void draw() {
+void draw(int shouldClear) {
     for(int y=0;y<30;y++) {
         for(int x=0;x<120;x++) {
-            printf("%c",getPixelToPrint(x,y));
+            if(!shouldClear)printf("%c",getPixelToPrint(x,y));
+            else printf(" ");
         }
     }
 }
